@@ -21,7 +21,7 @@
   .card:hover { transform:translateY(-4px); }
   .card .icon { font-size:34px; }
   .card .nm { font-weight:700; margin:4px 0 2px; font-size:13px; }
-  .card .st { font-size:11px; color:#9aa3b5; line-height:1.5; }
+  .card .st { font-size:11px; color:#9aa3b5; line-height:1.5; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.07); border-radius:7px; padding:5px 4px; margin-top:4px; }
   .card .own { font-size:11px; color:#6fd66f; margin-top:4px; }
   .r-common { border-color:#9aa5b1; } .r-rare { border-color:#3aa0ff; } .r-epic { border-color:#b45cff; } .r-legendary { border-color:#ff9d2e; box-shadow:0 0 14px rgba(255,157,46,.35); }
   .btn { pointer-events:auto; background:linear-gradient(180deg,#e8bd4f,#b98a1e); color:#241a05; border:none; border-radius:8px; padding:8px 16px; font-weight:800; cursor:pointer; letter-spacing:.5px; font-size:13px; }
@@ -74,7 +74,11 @@
   .v-gold { background:linear-gradient(90deg,#8a6a1f,#ffd76a,#8a6a1f); color:#241a05; }
   .v-rainbow { background:linear-gradient(90deg,#ff5b5b,#ffb02e,#6fd66f,#3aa0ff,#b45cff); background-size:200% 100%; animation:rainbowShift 2s linear infinite; color:#111; }
   @keyframes rainbowShift { 0%{background-position:0 0} 100%{background-position:200% 0} }
-  .card.v-alt-c { border-color:#b45cff; border-style:dashed; }
+  .card.v-alt-c { border-color:#b45cff; border-style:dashed; background:linear-gradient(160deg,#33205c 0%,#1a1430 55%,#241a3f 100%); box-shadow:inset 0 0 34px rgba(180,92,255,.18); }
+  .card.v-alt-c .st { background:transparent; border:none; padding:1px 2px; margin-top:2px; color:#d9cfa8; text-shadow:0 1px 4px #000, 0 0 10px rgba(0,0,0,.95); }
+  .card.v-alt-c .nm { text-shadow:0 1px 4px #000, 0 0 12px rgba(0,0,0,.95); }
+  .card.v-alt-c .own { text-shadow:0 1px 4px #000, 0 0 10px rgba(0,0,0,.95); }
+  .card.v-alt-c .icon { text-shadow:0 0 18px rgba(180,92,255,.6); }
   .card.v-gold-c { border-color:#ffd76a; box-shadow:0 0 14px rgba(255,215,106,.55); background:linear-gradient(160deg,#1f1a0d,#10151f); }
   .card.v-rainbow-c { border:2px solid transparent; background:linear-gradient(#10151f,#10151f) padding-box, linear-gradient(90deg,#ff5b5b,#ffb02e,#6fd66f,#3aa0ff,#b45cff) border-box; background-size:200% 100%, 200% 100%; animation:rainbowShift 3s linear infinite; }
   .icon.altart { filter:hue-rotate(90deg) saturate(1.6); }
