@@ -68,6 +68,17 @@
   .hrow.na { opacity:.45; cursor:not-allowed; }
   #toast { position:fixed; top:70px; left:50%; transform:translateX(-50%); background:#1f2736; border:1px solid #c9a13b; color:#ffe9a8; padding:10px 20px; border-radius:10px; z-index:60; display:none; font-weight:700; }
   .sectionTitle { color:#c9a13b; font-size:14px; letter-spacing:2px; margin:14px 0 8px; font-weight:800; }
+  .vbadge { display:inline-block; font-size:9px; font-weight:800; padding:1px 7px; border-radius:6px; margin:4px 2px 0; letter-spacing:1px; }
+  .v-normal { background:#2a3345; color:#9aa5b1; }
+  .v-alt { background:#3a2a5f; color:#c9a3ff; }
+  .v-gold { background:linear-gradient(90deg,#8a6a1f,#ffd76a,#8a6a1f); color:#241a05; }
+  .v-rainbow { background:linear-gradient(90deg,#ff5b5b,#ffb02e,#6fd66f,#3aa0ff,#b45cff); background-size:200% 100%; animation:rainbowShift 2s linear infinite; color:#111; }
+  @keyframes rainbowShift { 0%{background-position:0 0} 100%{background-position:200% 0} }
+  .card.v-alt-c { border-color:#b45cff; border-style:dashed; }
+  .card.v-gold-c { border-color:#ffd76a; box-shadow:0 0 14px rgba(255,215,106,.55); background:linear-gradient(160deg,#1f1a0d,#10151f); }
+  .card.v-rainbow-c { border:2px solid transparent; background:linear-gradient(#10151f,#10151f) padding-box, linear-gradient(90deg,#ff5b5b,#ffb02e,#6fd66f,#3aa0ff,#b45cff) border-box; background-size:200% 100%, 200% 100%; animation:rainbowShift 3s linear infinite; }
+  .icon.altart { filter:hue-rotate(90deg) saturate(1.6); }
+  .vbadge.off { opacity:.22; filter:grayscale(1); }
 </style>
 </head>
 <body>
@@ -149,6 +160,14 @@
 <script>
 'use strict';
 // ============================== DATA ==============================
+const VARIANTS = {
+  normal:  { name:'NORMAL',  mult:1,   dustMult:1  },
+  alt:     { name:'ALT ART', mult:1,   dustMult:2  },
+  gold:    { name:'GOLD',    mult:1.1, dustMult:5  },
+  rainbow: { name:'RAINBOW', mult:1.2, dustMult:12 }
+};
+function rollVariant(){ const r=Math.random(); if(r<.02) return 'rainbow'; if(r<.10) return 'gold'; if(r<.30) return 'alt'; return 'normal'; }
+function variantBonus(kind,id){ const v=(S.variants[kind]&&S.variants[kind][id])||{}; if(v.rainbow) return 1.2; if(v.gold) return 1.1; return 1; }
 const RARITIES = {
   common:   { name:'Common',    cls:'r-common',    dust:12 },
   rare:     { name:'Rare',      cls:'r-rare',      dust:30 },
@@ -202,10 +221,11 @@ const CHAT_LINES = [
 const BOT_NAMES = BOTS.map(b=>b.name).concat(['TinyTitan','Meadhorn','RuneReader','Griflet','SaltWitch']);
 
 // ============================== STATE ==============================
-let S = { coins:500, packs:{}, enemyCards:{}, heroes:{}, wins:0, losses:0, chat:[], chatUnread:0 };
+let S = { coins:500, packs:{}, enemyCards:{}, heroes:{}, variants:{enemy:{},hero:{}}, wins:0, losses:0, chat:[], chatUnread:0 };
 function save(){ try{ localStorage.setItem('packlet_save', JSON.stringify(S)); }catch(e){} }
 function load(){ try{ const d=localStorage.getItem('packlet_save'); if(d) S=Object.assign(S, JSON.parse(d)); }catch(e){} }
 load();
+if(!S.variants) S.variants={enemy:{},hero:{}};
 function heroLevel(id){ return S.heroes[id]||0; }
 function heroStats(def){ const l=heroLevel(def.id)||1; const m=1+0.15*(l-1); return { hp:Math.round(def.hp*m), dps:Math.round(def.dps*m) }; }
 
@@ -347,11 +367,22 @@ function openPanel(name){
   if(name==='collection') renderCollection(); if(name==='chat') renderChat(); if(name==='challenge') renderBots();
   if(name==='chat'){ S.chatUnread=0; document.getElementById('chatBadge').style.display='none'; }
 }
-function cardHTML(def, extra){
-  const r=RARITIES[def.rarity];
+function cardHTML(def, extra, variant){
+  const r=RARITIES[def.rarity]; const v=variant||'normal'; const V=VARIANTS[v];
   const rc={common:'#9aa5b1',rare:'#3aa0ff',epic:'#b45cff',legendary:'#ff9d2e'}[def.rarity];
-  return '<div class="card '+r.cls+'"><div class="icon">'+def.icon+'</div><div class="nm">'+def.name+'</div>'+
-    '<div class="st" style="color:'+rc+'">'+r.name+'</div><div class="st">'+(extra||'')+'</div></div>';
+  const vcls=v==='gold'?'v-gold-c':v==='rainbow'?'v-rainbow-c':v==='alt'?'v-alt-c':'';
+  const iconCls=v==='alt'?'icon altart':'icon';
+  return '<div class="card '+r.cls+' '+vcls+'"><div class="'+iconCls+'">'+def.icon+'</div><div class="nm">'+def.name+'</div>'+
+    '<div class="st" style="color:'+rc+'">'+r.name+'</div><div class="st">'+(extra||'')+'</div>'+
+    (v!=='normal'?'<div class="vbadge v-'+v+'">'+V.name+'</div>':'')+'</div>';
+}
+function variantChips(kind,id){
+  const vs=(S.variants[kind]&&S.variants[kind][id])||{};
+  return ['normal','alt','gold','rainbow'].map(k=>{
+    const on=(k==='normal')||vs[k];
+    const lbl=k==='normal'?'NORMAL':VARIANTS[k].name;
+    return '<span class="vbadge v-'+k+(on?'':' off')+'">'+lbl+'</span>';
+  }).join('');
 }
 function renderShop(){
   document.getElementById('shopGrid').innerHTML = PACKS.map(p=>
@@ -388,7 +419,7 @@ function ripPack(id){
     else if(p.type==='hero'){ pool=HEROES; kind='hero'; }
     else { kind=Math.random()<.5?'enemy':'hero'; pool=kind==='enemy'?ENEMIES:HEROES; }
     let def=choice(pool.filter(d=>d.rarity===rar)); if(!def) def=choice(pool);
-    results.push({def,kind,rar});
+    results.push({def,kind,rar,variant:rollVariant()});
   }
   packEl.onclick=()=>{
     packEl.classList.remove('shake'); packEl.style.transform='scale(1.6)'; packEl.style.opacity='0'; beep(200,.2,'sawtooth');
@@ -400,7 +431,7 @@ function ripPack(id){
     (function next(){
       if(idx>=results.length){ done(); return; }
       const r=results[idx++]; applyCard(r);
-      const d=document.createElement('div'); d.innerHTML=cardHTML(r.def, cardStats(r));
+      const d=document.createElement('div'); d.innerHTML=cardHTML(r.def, cardStats(r), r.variant);
       const cardEl=d.firstChild; cardEl.classList.add('revealed');
       document.getElementById('ripCards').appendChild(cardEl);
       beep(r.rar==='legendary'?880:r.rar==='epic'?700:r.rar==='rare'?560:440,.18);
@@ -415,10 +446,20 @@ function ripPack(id){
   }
 }
 function cardStats(r){
-  if(r.kind==='enemy'){ const d=r.def; return 'HP '+d.hp+' • DMG '+d.dmg+'<br>Speed '+d.speed+' • Mana '+d.cost; }
-  const s=heroStats(r.def); return 'HP '+s.hp+' • DPS '+s.dps+'<br>Range '+r.def.range+' • Gold '+r.def.cost;
+  const v=r.variant||'normal'; const vm=VARIANTS[v].mult;
+  if(r.kind==='enemy'){ const d=r.def; return 'HP '+Math.round(d.hp*vm)+' • DMG '+Math.round(d.dmg*vm)+'<br>Speed '+d.speed+' • Mana '+d.cost; }
+  const s=heroStats(r.def); return 'HP '+Math.round(s.hp*vm)+' • DPS '+Math.round(s.dps*vm)+'<br>Range '+r.def.range+' • Gold '+r.def.cost;
 }
 function applyCard(r){
+  const v=r.variant||'normal';
+  if(v!=='normal'){
+    const store=S.variants[r.kind==='enemy'?'enemy':'hero'];
+    const cur=store[r.def.id]||(store[r.def.id]={});
+    const pay=Math.round(RARITIES[r.rar].dust*VARIANTS[v].dustMult/2);
+    if(cur[v]){ S.coins+=pay; toast('Duplicate '+VARIANTS[v].name+' '+r.def.name+' → +'+pay+' coins'); }
+    else { cur[v]=1; toast(VARIANTS[v].name+' '+r.def.name+'!! ✨'); }
+    return;
+  }
   if(r.kind==='enemy'){
     if(S.enemyCards[r.def.id]){ S.coins+=RARITIES[r.rar].dust; toast('Duplicate '+r.def.name+' → +'+RARITIES[r.rar].dust+' coins'); }
     else { S.enemyCards[r.def.id]=1; toast('NEW card: '+r.def.name+'!'); }
@@ -440,13 +481,14 @@ function buyHero(id){ const h=HEROES.find(x=>x.id===id); if(S.coins<h.cost) retu
 function renderCollection(){
   document.getElementById('colEnemies').innerHTML = ENEMIES.map(e=>{
     const owned=S.enemyCards[e.id];
-    return cardHTML(e, 'HP '+e.hp+' • DMG '+e.dmg+'<br>Mana '+e.cost+
-      '<div class="own" style="color:'+(owned?'#6fd66f':'#666')+'">'+(owned?'OWNED — '+e.desc:'locked')+'</div>');
+    const bm=variantBonus('enemy',e.id);
+    return cardHTML(e, 'HP '+Math.round(e.hp*bm)+' • DMG '+Math.round(e.dmg*bm)+'<br>Mana '+e.cost+(bm>1?' • ★x'+bm:'')+
+      '<div class="own" style="color:'+(owned?'#6fd66f':'#666')+'">'+(owned?'OWNED — '+e.desc:'locked')+'</div>'+variantChips('enemy',e.id));
   }).join('');
   document.getElementById('colHeroes').innerHTML = HEROES.map(h=>{
-    const lv=heroLevel(h.id);
-    return cardHTML(h, 'HP '+heroStats(h).hp+' • DPS '+heroStats(h).dps+'<br>Range '+h.range+
-      '<div class="own" style="color:'+(lv?'#6fd66f':'#666')+'">'+(lv?'Lv '+lv:'locked')+'</div>');
+    const lv=heroLevel(h.id); const bm=variantBonus('hero',h.id);
+    return cardHTML(h, 'HP '+Math.round(heroStats(h).hp*bm)+' • DPS '+Math.round(heroStats(h).dps*bm)+'<br>Range '+h.range+(bm>1?' • ★x'+bm:'')+
+      '<div class="own" style="color:'+(lv?'#6fd66f':'#666')+'">'+(lv?'Lv '+lv:'locked')+'</div>'+variantChips('hero',h.id));
   }).join('');
 }
 function renderChat(){
@@ -538,7 +580,9 @@ function buildResBar(){
 function playerSummon(def){
   if(!battle||battle.over||battle.playerSide!=='attack') return;
   if(battle.mana<def.cost){ toast('Not enough mana!'); beep(180,.1); return; }
-  battle.mana-=def.cost; spawnEnemy(def,false);
+  battle.mana-=def.cost;
+  const m=variantBonus('enemy',def.id);
+  spawnEnemy(m>1?Object.assign({},def,{hp:Math.round(def.hp*m),dmg:Math.round(def.dmg*m)}):def,false);
 }
 function spawnEnemy(def, isBot, hpMult){
   const g=buildUnit(def); g.position.set(-20,0,-12); battle.scene.add(g);
@@ -703,7 +747,10 @@ function openHeroPick(pad,x,y){
     const ok=!pad.unit&&battle.gold>=h.cost;
     const row=document.createElement('div'); row.className='hrow'+(ok?'':' na');
     row.innerHTML='<span>'+h.icon+' '+h.name+' <span style="color:#8a93a6">Lv'+heroLevel(h.id)+'</span></span><b style="color:#ffd76a">◉'+h.cost+'</b>';
-    if(ok) row.onclick=()=>{ battle.gold-=h.cost; placeHero(h,pad,false); el.style.display='none'; beep(700,.1); };
+    if(ok) row.onclick=()=>{ battle.gold-=h.cost;
+      const m=variantBonus('hero',h.id);
+      placeHero(m>1?Object.assign({},h,{hp:Math.round(h.hp*m),dps:Math.round(h.dps*m)}):h,pad,false);
+      el.style.display='none'; beep(700,.1); };
     el.appendChild(row);
   });
   el.style.display='block'; el.style.left=Math.min(x,innerWidth-250)+'px'; el.style.top=Math.min(y,innerHeight-320)+'px';
