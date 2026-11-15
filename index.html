@@ -292,11 +292,12 @@ const CHAT_LINES = [
 const BOT_NAMES = BOTS.map(b=>b.name).concat(['TinyTitan','Meadhorn','RuneReader','Griflet','SaltWitch']);
 
 // ============================== STATE ==============================
-let S = { coins:500, packs:{}, enemyCards:{}, heroes:{}, variants:{enemy:{},hero:{}}, wins:0, losses:0, chat:[], chatUnread:0 };
+let S = { coins:500, packs:{}, enemyCards:{}, heroes:{}, variants:{enemy:{},hero:{}}, equipped:{enemy:[],hero:[]}, wins:0, losses:0, chat:[], chatUnread:0 };
 function save(){ try{ localStorage.setItem('packlet_save', JSON.stringify(S)); }catch(e){} }
 function load(){ try{ const d=localStorage.getItem('packlet_save'); if(d) S=Object.assign(S, JSON.parse(d)); }catch(e){} }
 load();
 if(!S.variants) S.variants={enemy:{},hero:{}};
+if(!S.equipped) S.equipped={enemy:[],hero:[]};
 function heroLevel(id){ return S.heroes[id]||0; }
 function heroStats(def){ const l=heroLevel(def.id)||1; const m=1+0.15*(l-1); return { hp:Math.round(def.hp*m), dps:Math.round(def.dps*m) }; }
 
@@ -662,21 +663,36 @@ function renderHeroShop(){
 }
 function buyHero(id){ const h=HEROES.find(x=>x.id===id); if(S.coins<h.cost) return; S.coins-=h.cost; S.heroes[id]=(S.heroes[id]||0)+1; save(); updateCoins(); renderHeroShop(); beep(700,.12); toast(h.name+' recruited!'); }
 let colFilter='owned';
+function toggleEquip(kind,id){
+  const list=S.equipped[kind]; const i=list.indexOf(id);
+  if(i>=0){ list.splice(i,1); toast('Unequipped.'); }
+  else { if(list.length>=8){ toast('Deck full (8) — unequip something first!'); beep(180,.1); return; } list.push(id); toast('Equipped!'); }
+  save(); renderCollection();
+}
+function equipBest(){
+  const order={common:0,rare:1,epic:2,legendary:3};
+  S.equipped.enemy=ENEMIES.filter(e=>S.enemyCards[e.id]).sort((a,b)=>order[b.rarity]-order[a.rarity]).slice(0,8).map(e=>e.id);
+  S.equipped.hero=HEROES.filter(h=>heroLevel(h.id)>0).sort((a,b)=>order[b.rarity]-order[a.rarity]).slice(0,8).map(h=>h.id);
+  save(); renderCollection(); toast('Best 8 enemy cards + 8 heroes equipped!'); beep(700,.1);
+}
 function renderCollection(){
   const flt=d=> colFilter==='all' || (colFilter==='owned' ? (S.enemyCards[d.id]||heroLevel(d.id)) : d.rarity===colFilter);
-  document.getElementById('colFilterRow').innerHTML = ['all','owned','common','rare','epic','legendary'].map(f=>
-    '<button class="btn'+(colFilter===f?'':' sec')+'" style="margin-right:6px;padding:5px 12px;font-size:11px" onclick="colFilter=\''+f+'\';renderCollection()">'+f.toUpperCase()+'</button>').join('');
+  document.getElementById('colFilterRow').innerHTML = ['owned','all','common','rare','epic','legendary'].map(f=>
+    '<button class="btn'+(colFilter===f?'':' sec')+'" style="margin-right:6px;padding:5px 12px;font-size:11px" onclick="colFilter=\''+f+'\';renderCollection()">'+f.toUpperCase()+'</button>').join('')+
+    '<button class="btn" style="padding:5px 12px;font-size:11px" onclick="equipBest()">⚔ EQUIP TOP 8</button>';
   document.getElementById('colEnemies').innerHTML = ENEMIES.filter(flt).map(e=>{
     const owned=S.enemyCards[e.id];
     const bm=variantBonus('enemy',e.id);
     return cardHTML(e, 'HP '+Math.round(e.hp*bm)+' • DMG '+Math.round(e.dmg*bm)+'<br>Mana '+e.cost+(bm>1?' • ★x'+bm:'')+
-      '<div class="own" style="color:'+(owned?'#6fd66f':'#666')+'">'+(owned?'OWNED — '+e.desc:'locked')+'</div>'+variantChips('enemy',e.id));
+      '<div class="own" style="color:'+(owned?'#6fd66f':'#666')+'">'+(owned?'OWNED — '+e.desc:'locked')+'</div>'+variantChips('enemy',e.id)+
+      (owned?'<button class="btn '+(S.equipped.enemy.indexOf(e.id)>=0?'':'sec')+'" style="margin-top:6px;padding:4px 10px;font-size:10px" onclick="toggleEquip(\'enemy\',\''+e.id+'\')">'+(S.equipped.enemy.indexOf(e.id)>=0?'✓ EQUIPPED':'EQUIP')+'</button>':''));
   }).join('');
   document.getElementById('eCount').textContent=ENEMIES.filter(e=>S.enemyCards[e.id]).length;
   document.getElementById('colHeroes').innerHTML = HEROES.filter(flt).map(h=>{
     const lv=heroLevel(h.id); const bm=variantBonus('hero',h.id);
     return cardHTML(h, 'HP '+Math.round(heroStats(h).hp*bm)+' • DPS '+Math.round(heroStats(h).dps*bm)+'<br>Range '+h.range+(bm>1?' • ★x'+bm:'')+
-      '<div class="own" style="color:'+(lv?'#6fd66f':'#666')+'">'+(lv?'Lv '+lv:'locked')+'</div>'+variantChips('hero',h.id));
+      '<div class="own" style="color:'+(lv?'#6fd66f':'#666')+'">'+(lv?'Lv '+lv:'locked')+'</div>'+variantChips('hero',h.id)+
+      (lv?'<button class="btn '+(S.equipped.hero.indexOf(h.id)>=0?'':'sec')+'" style="margin-top:6px;padding:4px 10px;font-size:10px" onclick="toggleEquip(\'hero\',\''+h.id+'\')">'+(S.equipped.hero.indexOf(h.id)>=0?'✓ EQUIPPED':'EQUIP')+'</button>':''));
   }).join('');
   document.getElementById('hCount').textContent=HEROES.filter(h=>heroLevel(h.id)).length;
 }
@@ -756,7 +772,8 @@ function startBattle(botIdx, playerSide){
     m.position.set(pz[0],.2,pz[1]); scene.add(m); pads.push({mesh:m, pos:new THREE.Vector3(pz[0],0,pz[1]), unit:null});
   });
   battle={ scene, crystal, crystalHP:500, crystalMax:500, time:120, playerSide, bot, units:[], shots:[], pads,
-    mana:20, manaMax:60, gold:130, botMana:20, botGold:130, over:false,
+    mana:20, manaMax:60, manaRegen:2, gold:130, goldRate:6, botMana:20, botGold:130, over:false,
+    up:{max:25,regen:35}, dup:{inc:100,rep:90},
     manaMult: playerSide==='attack'?1:(.7+.3*bot.diff), goldMult: playerSide==='defend'?1:(.7+.3*bot.diff),
     botTimer:2, keys:[] };
   battle.fx={shards,cLight,portal,inner};
@@ -778,16 +795,44 @@ function distToSeg(px,pz,a,b){
 function buildResBar(){
   const bar=document.getElementById('resBar'); bar.innerHTML='';
   if(battle.playerSide==='attack'){
-    const owned=ENEMIES.filter(e=>S.enemyCards[e.id]);
+    const eq=S.equipped.enemy;
+    const owned=ENEMIES.filter(e=>S.enemyCards[e.id]&&eq.indexOf(e.id)>=0);
     battle.keys=owned;
-    if(!owned.length){ bar.innerHTML='<div class="chip">No enemy cards! Rip packs to get cards.</div>'; return; }
+    if(!ENEMIES.some(e=>S.enemyCards[e.id])) { bar.innerHTML='<div class="chip">No enemy cards! Rip packs to get cards.</div>'; return; }
+    if(!owned.length){ bar.innerHTML='<div class="chip">❌ No cards equipped! Open 📚 Collection and equip your deck.</div>'; return; }
     owned.forEach((e,i)=>{
       const d=document.createElement('div'); d.className='ucard'; d.id='uc_'+e.id;
       d.innerHTML='<div class="icon">'+e.icon+'</div><div class="nm">'+e.name+' ['+(i<9?(i+1):'·')+']</div><div class="cost">◉ '+e.cost+' mana</div>';
       d.onclick=()=>playerSummon(e); bar.appendChild(d);
     });
+    const mkUp=(icon,label,key,fn)=>{
+      const d=document.createElement('div'); d.className='ucard'; d.style.borderColor='#3fd0ff';
+      d.innerHTML='<div class="icon">'+icon+'</div><div class="nm">'+label+'</div><div class="cost" id="up_'+key+'">◉ '+battle.up[key]+'</div>';
+      d.onclick=()=>fn(); bar.appendChild(d); return d;
+    };
+    mkUp('⬆','MAX MANA +10','max',()=>{ const B=battle;
+      if(B.mana>=B.up.max){ B.mana-=B.up.max; B.manaMax+=10; B.up.max=Math.round(B.up.max*1.5);
+        document.getElementById('up_max').textContent='◉ '+B.up.max; toast('Max mana is now '+B.manaMax+'!'); beep(700,.1); }
+      else { toast('Not enough mana!'); beep(180,.1); } });
+    mkUp('⚡','REGEN +1/s','regen',()=>{ const B=battle;
+      if(B.mana>=B.up.regen){ B.mana-=B.up.regen; B.manaRegen+=1; B.up.regen=Math.round(B.up.regen*1.5);
+        document.getElementById('up_regen').textContent='◉ '+B.up.regen; toast('Mana regen +1/s!'); beep(700,.1); }
+      else { toast('Not enough mana!'); beep(180,.1); } });
   } else {
     bar.innerHTML='<div class="chip">🛡️ Click a gold pad to place a hero &nbsp;•&nbsp; <span id="goldDisp"></span></div>';
+    const mkDup=(icon,label,key,fn)=>{
+      const d=document.createElement('div'); d.className='ucard'; d.style.borderColor='#7fe08a';
+      d.innerHTML='<div class="icon">'+icon+'</div><div class="nm">'+label+'</div><div class="cost" id="dup_'+key+'">◉ '+battle.dup[key]+'</div>';
+      d.onclick=()=>fn(); bar.appendChild(d);
+    };
+    mkDup('💰','GOLD RATE +2/s','inc',()=>{ const B=battle;
+      if(B.gold>=B.dup.inc){ B.gold-=B.dup.inc; B.goldRate+=2; B.dup.inc=Math.round(B.dup.inc*1.5);
+        document.getElementById('dup_inc').textContent='◉ '+B.dup.inc; toast('Gold rate +2/s!'); beep(700,.1); }
+      else { toast('Not enough gold!'); beep(180,.1); } });
+    mkDup('🔧','REPAIR CRYSTAL +60','rep',()=>{ const B=battle;
+      if(B.gold>=B.dup.rep&&B.crystalHP<B.crystalMax){ B.gold-=B.dup.rep; B.crystalHP=Math.min(B.crystalMax,B.crystalHP+60); B.dup.rep=Math.round(B.dup.rep*1.4);
+        document.getElementById('dup_rep').textContent='◉ '+B.dup.rep; toast('Crystal repaired +60!'); beep(700,.1); }
+      else toast(B.crystalHP>=B.crystalMax?'Crystal at full health!':'Not enough gold!'); });
   }
 }
 function playerSummon(def){
@@ -850,7 +895,7 @@ function updateBattle(dt){
   }
   B.time-=dt;
   if(B.time<=0){ endBattle(B.playerSide==='defend'); return; }
-  if(B.playerSide==='attack'){ B.mana=Math.min(B.manaMax,B.mana+2*dt); } else { B.gold+=6*B.goldMult*dt; }
+  if(B.playerSide==='attack'){ B.mana=Math.min(B.manaMax,B.mana+B.manaRegen*dt); } else { B.gold+=B.goldRate*B.goldMult*dt; }
   B.botMana=Math.min(60,B.botMana+2*B.manaMult*dt);
   B.botGold+=6*B.goldMult*dt;
   B.botTimer-=dt;
@@ -943,7 +988,7 @@ function updateBattle(dt){
   document.getElementById('crystalFill').style.width=Math.max(0,B.crystalHP/B.crystalMax*100)+'%';
   document.getElementById('timerLabel').textContent='⏱ '+Math.max(0,Math.ceil(B.time))+'s — crystal '+Math.max(0,Math.round(B.crystalHP))+' HP';
   const rl=document.getElementById('resLabel');
-  if(B.playerSide==='attack'){ rl.textContent='MANA '+Math.floor(B.mana)+' / '+B.manaMax;
+  if(B.playerSide==='attack'){ rl.textContent='MANA '+Math.floor(B.mana)+' / '+B.manaMax+' (+'+B.manaRegen+'/s)';
     B.keys.forEach(e=>{ const el=document.getElementById('uc_'+e.id); if(el) el.classList.toggle('na',B.mana<e.cost); });
   } else { const gd=document.getElementById('goldDisp'); if(gd)gd.textContent='◉ '+Math.floor(B.gold)+' gold'; }
 }
@@ -962,8 +1007,11 @@ renderer.domElement.addEventListener('pointerdown', ev=>{
 function openHeroPick(pad,x,y){
   const el=document.getElementById('heroPick');
   el.innerHTML='<div class="sectionTitle" style="margin:2px 0 8px">PLACE HERO</div>';
-  const owned=HEROES.filter(h=>heroLevel(h.id)>0);
-  if(!owned.length) el.innerHTML+='<div class="sub">No heroes! Buy or rip some first.</div>';
+  const owned=HEROES.filter(h=>heroLevel(h.id)>0&&S.equipped.hero.indexOf(h.id)>=0);
+  if(!owned.length){
+    const anyHero=HEROES.some(h=>heroLevel(h.id)>0);
+    el.innerHTML+='<div class="sub">'+(anyHero?'No heroes equipped! Open 📚 Collection and equip your deck.':'No heroes! Buy or rip some first.')+'</div>';
+  }
   owned.forEach(h=>{
     const ok=!pad.unit&&battle.gold>=h.cost;
     const row=document.createElement('div'); row.className='hrow'+(ok?'':' na');
