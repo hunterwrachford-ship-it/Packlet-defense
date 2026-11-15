@@ -207,14 +207,14 @@ const ENEMIES = [
   { id:'wyrm',     name:'Elder Wyrm',      rarity:'legendary', cost:110, hp:400, speed:1.6, dmg:52, shape:'dragon',   colors:{skin:'#7a1f1f',wings:'#3a0d0d'}, size:1.5, fly:true, icon:'🐲', desc:'Ancient dragon, near unstoppable' }
 ];
 const HEROES = [
-  { id:'squire',  name:'Squire',        rarity:'common',    cost:60,  hp:95,  range:3,   dps:13, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#8a6d3b'}, size:0.8,  icon:'🛡️' },
-  { id:'archer',  name:'Archer',        rarity:'common',    cost:80,  hp:75,  range:6,   dps:17, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#3f6b3a'}, size:0.8,  icon:'🏹' },
-  { id:'knight',  name:'Knight',        rarity:'rare',      cost:140, hp:230, range:2.6, dps:27, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#6d7f95'}, size:0.95, icon:'⚔️' },
-  { id:'mage',    name:'Battle Mage',   rarity:'rare',      cost:160, hp:95,  range:5.5, dps:30, splash:2.2, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#4a3f8a'}, size:0.85, icon:'🔮' },
-  { id:'druid',   name:'Frost Druid',   rarity:'epic',      cost:220, hp:115, range:5,   dps:23, slow:true, shape:'humanoid', colors:{skin:'#cfe9ff',cloth:'#2e6f8f'}, size:0.85, icon:'❄️' },
-  { id:'valk',    name:'Valkyrie',      rarity:'epic',      cost:260, hp:190, range:4,   dps:47, shape:'humanoid', colors:{skin:'#f0d8b8',cloth:'#c9a13b'}, wings:true, size:0.95, icon:'👼' },
-  { id:'paladin', name:'Paladin',       rarity:'legendary', cost:340, hp:330, range:3,   dps:42, aura:true, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#d8c8a0'}, size:1.05, icon:'✨' },
-  { id:'draknight',name:'Dragon Knight',rarity:'legendary', cost:400, hp:290, range:5,   dps:60, splash:1.8, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#8a2b2b'}, size:1.05, icon:'🐲' }
+  { id:'squire',  name:'Squire',        rarity:'common',    cost:60,  hp:95,  range:4.5, dps:13, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#8a6d3b'}, size:0.8,  icon:'🛡️' },
+  { id:'archer',  name:'Archer',        rarity:'common',    cost:80,  hp:75,  range:7,   dps:17, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#3f6b3a'}, size:0.8,  icon:'🏹' },
+  { id:'knight',  name:'Knight',        rarity:'rare',      cost:140, hp:230, range:4,   dps:27, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#6d7f95'}, size:0.95, icon:'⚔️' },
+  { id:'mage',    name:'Battle Mage',   rarity:'rare',      cost:160, hp:95,  range:6.5, dps:30, splash:2.2, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#4a3f8a'}, size:0.85, icon:'🔮' },
+  { id:'druid',   name:'Frost Druid',   rarity:'epic',      cost:220, hp:115, range:6,   dps:23, slow:true, shape:'humanoid', colors:{skin:'#cfe9ff',cloth:'#2e6f8f'}, size:0.85, icon:'❄️' },
+  { id:'valk',    name:'Valkyrie',      rarity:'epic',      cost:260, hp:190, range:5,   dps:47, shape:'humanoid', colors:{skin:'#f0d8b8',cloth:'#c9a13b'}, wings:true, size:0.95, icon:'👼' },
+  { id:'paladin', name:'Paladin',       rarity:'legendary', cost:340, hp:330, range:4.5, dps:42, aura:true, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#d8c8a0'}, size:1.05, icon:'✨' },
+  { id:'draknight',name:'Dragon Knight',rarity:'legendary', cost:400, hp:290, range:6,   dps:60, splash:1.8, shape:'humanoid', colors:{skin:'#e0b18a',cloth:'#8a2b2b'}, size:1.05, icon:'🐲' }
 ];
 // ---------- ROSTER EXPANSION: 250 enemy + 250 hero cards ----------
 function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
@@ -254,7 +254,7 @@ function genHero(i){
   const st=H_STAT[tier.r];
   const gi=(a,b)=>Math.round(a+(b-a)*rnd());
   const def={ id, name:(tier.p+base).trim(), rarity:tier.r, cost:gi(st.cost[0],st.cost[1]),
-    hp:gi(st.hp[0],st.hp[1]), dps:gi(st.dps[0],st.dps[1]), range:+(2.5+rnd()*3.5).toFixed(1),
+    hp:gi(st.hp[0],st.hp[1]), dps:gi(st.dps[0],st.dps[1]), range:+(3.5+rnd()*3.5).toFixed(1),
     shape:'humanoid', size:+(0.8+rnd()*0.3).toFixed(2),
     icon:['🛡️','🏹','⚔️','🔮','✨','👼','❄️','🔥'][Math.floor(rnd()*8)],
     colors:{ skin:'#e0b18a', cloth:hsl(rnd(),.4,.35) } };
@@ -708,7 +708,7 @@ function renderBots(){
 
 // ============================== BATTLE ==============================
 const WAY=[[-20,-12],[-20,4],[-8,4],[-8,-8],[4,-8],[4,8],[14,8],[14,-4],[20,-4]];
-const PADS=[[-16,0],[-16,9],[-4,0],[-4,-13],[0,4],[9,-4],[9,12],[18,2]];
+const PADS=[[-17.5,0],[-14,1.5],[-5.5,0],[-4,-10.5],[1.5,-4],[2,10],[11.5,10],[16.5,-2]];
 let battle=null;
 function startBattle(botIdx, playerSide){
   closePanels();
