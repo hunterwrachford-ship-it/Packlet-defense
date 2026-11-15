@@ -90,7 +90,10 @@
   .icon.altart { filter:hue-rotate(90deg) saturate(1.6); }
   .vbadge.off { opacity:.22; filter:grayscale(1); }
   .artwrap { position:relative; margin-bottom:4px; }
-  .card .art { width:100%; height:72px; object-fit:cover; border-radius:7px; image-rendering:pixelated; display:block; }
+  .card .art { width:100%; height:86px; object-fit:cover; border-radius:7px; display:block; }
+  .card.v-gold-c .artwrap::after { content:''; position:absolute; inset:0; border-radius:7px; background:linear-gradient(120deg,rgba(255,215,106,.32),rgba(255,240,180,.06) 45%,rgba(255,196,60,.3)); mix-blend-mode:overlay; pointer-events:none; }
+  .card.v-rainbow-c .artwrap::after { content:''; position:absolute; inset:0; border-radius:7px; background:linear-gradient(115deg,rgba(255,91,91,.25),rgba(255,176,46,.2),rgba(111,214,111,.2),rgba(58,160,255,.22),rgba(180,92,255,.25)); mix-blend-mode:screen; pointer-events:none; animation:rainbowShift 3s linear infinite; background-size:200% 100%; }
+  .card.v-alt-c .artwrap::after { content:''; position:absolute; inset:0; border-radius:7px; background:rgba(110,45,190,.3); mix-blend-mode:overlay; pointer-events:none; }
   .card .miniIcon { position:absolute; top:3px; left:5px; font-size:14px; filter:drop-shadow(0 1px 2px #000); }
   .card.v-alt-c .art { filter:hue-rotate(85deg) saturate(1.5); }
   #lobbyFeed { position:fixed; top:64px; left:50%; transform:translateX(-50%); background:rgba(10,14,22,.75); border:1px solid #3a4356; color:#9aa3b5; padding:5px 16px; border-radius:20px; font-size:12px; z-index:6; pointer-events:none; white-space:nowrap; }
@@ -237,7 +240,7 @@ function genEnemy(i){
   const gf=(a,b)=>a+(b-a)*rnd();
   const shape=SHAPE_KEYS[Math.floor(rnd()*SHAPE_KEYS.length)];
   const sp=rnd();
-  const def={ id, name:(tier.p+base).trim(), rarity:tier.r, cost:gi(st.cost[0],st.cost[1]),
+  const def={ id, base, name:(tier.p+base).trim(), rarity:tier.r, cost:gi(st.cost[0],st.cost[1]),
     hp:gi(st.hp[0],st.hp[1]), speed:+gf(st.sp[0],st.sp[1]).toFixed(1), dmg:gi(st.dmg[0],st.dmg[1]),
     shape, size:+gf(0.7,1.5).toFixed(2), fly:(shape==='ghost'||shape==='bird'||shape==='dragon'),
     icon:SHAPE_ICONS[shape][Math.floor(rnd()*SHAPE_ICONS[shape].length)], desc:FLAVOR[shape],
@@ -253,7 +256,7 @@ function genHero(i){
   const id='g_h_'+i, rnd=srand(hashStr(id));
   const st=H_STAT[tier.r];
   const gi=(a,b)=>Math.round(a+(b-a)*rnd());
-  const def={ id, name:(tier.p+base).trim(), rarity:tier.r, cost:gi(st.cost[0],st.cost[1]),
+  const def={ id, base, name:(tier.p+base).trim(), rarity:tier.r, cost:gi(st.cost[0],st.cost[1]),
     hp:gi(st.hp[0],st.hp[1]), dps:gi(st.dps[0],st.dps[1]), range:+(3.5+rnd()*3.5).toFixed(1),
     shape:'humanoid', size:+(0.8+rnd()*0.3).toFixed(2),
     icon:['🛡️','🏹','⚔️','🔮','✨','👼','❄️','🔥'][Math.floor(rnd()*8)],
@@ -505,7 +508,25 @@ const ART_MAPS={
   hydra:['.ss..s..ss','.ss.sss.ss','..s.sss.s.','...ssss...','..ssssss..','.ssssssss.','..s.ss.s..','..s.ss.s..'],
   dragon:['.......ss.','w....ssss.','ww.ssssss.','wwsssssse.','w.ssssssss','..sssssss.','..ss..ss..','..s....s..']
 };
+const ART_SIG={ imp:'imp',skel:'skeleton',wolf:'wolf',wraith:'wraith',minotaur:'minotaur',troll:'troll',banshee:'banshee',fenrir:'fenrir',golem:'golem',hydra:'hydra',phoenix:'phoenix',wyrm:'dragon',squire:'squire',archer:'archer',knight:'knight',mage:'mage',druid:'druid',valk:'valkyrie',paladin:'paladin',draknight:'draknight' };
+const ART_E={ Imp:'imp',Goblin:'imp',Kobold:'imp',Skeleton:'skeleton',Zombie:'skeleton',Ghoul:'wraith',Wolf:'wolf',Spider:'spider',Rat:'wolf',Slime:'golem',Wraith:'wraith',Ghost:'wraith',Poltergeist:'wraith',Ghast:'wraith',Golem:'golem',Troll:'troll',Ogre:'oni',Cyclops:'oni',Giant:'oni',Minotaur:'minotaur',Centaur:'minotaur',Satyr:'imp',Faun:'imp',Harpy:'griffin',Siren:'banshee',Banshee:'banshee',Vampire:'vampire',Lich:'vampire',Cultist:'wraith',Warlock:'mage',Hydra:'hydra',Basilisk:'hydra',Chimera:'hydra',Manticore:'hydra',Gorgon:'banshee',Medusa:'banshee',Griffin:'griffin',Hippogriff:'griffin',Roc:'griffin',Phoenix:'phoenix',Thunderbird:'phoenix',Fenrir:'fenrir',Garmr:'fenrir',Skoll:'fenrir',Hati:'fenrir',Nidhogg:'dragon',Jormungandr:'hydra',Fafnir:'dragon',Wyvern:'dragon',Drake:'dragon' };
+const ART_H={ Squire:'squire',Archer:'archer',Knight:'knight',Mage:'mage',Priest:'paladin',Ranger:'archer',Rogue:'knight',Bard:'mage',Monk:'druid',Paladin:'paladin',Valkyrie:'valkyrie',Druid:'druid',Shaman:'druid',Warlock:'mage',Berserker:'oni',Samurai:'knight',Ninja:'knight',Viking:'knight',Spartan:'knight',Gladiator:'knight',Amazon:'valkyrie',Huntress:'archer',Oracle:'mage',Alchemist:'mage',Artificer:'mage',Crusader:'paladin',Templar:'paladin',Inquisitor:'paladin',Runeblade:'draknight',Spellblade:'mage',Beastmaster:'druid',Dragoon:'draknight',Necromancer:'vampire',Reaper:'wraith',Exorcist:'paladin',Stormcaller:'mage',Frostwarden:'druid',Emberpriest:'mage',Warden:'knight',Marshal:'knight',Sentinel:'knight',Highlander:'knight',Pitfighter:'oni',Skyrider:'valkyrie',Graveknight:'draknight',Sunblade:'paladin',Hexhunter:'archer',Ironclad:'knight',Starweaver:'mage',Doomherald:'wraith' };
+function artFileFor(def){
+  if(ART_SIG[def.id]) return ART_SIG[def.id]+'.jpg';
+  if(def.base){ const m=(def.id.slice(0,4)==='g_h_'?ART_H:ART_E)[def.base]; if(m) return m+'.jpg'; }
+  return null;
+}
 function cardArt(def, variant){
+  const f=artFileFor(def);
+  if(f) return 'art/'+f;
+  return pixelArt(def, variant);
+}
+function cardArtFail(img,id,v){
+  img.onerror=null;
+  const def=ENEMIES.find(e=>e.id===id)||HEROES.find(h=>h.id===id);
+  if(def) img.src=pixelArt(def,v);
+}
+function pixelArt(def, variant){
   const key=def.id+'|'+(variant||'normal');
   if(artCache[key]) return artCache[key];
   const cv=document.createElement('canvas'); cv.width=140; cv.height=100;
@@ -540,7 +561,7 @@ function cardHTML(def, extra, variant){
   const rc={common:'#9aa5b1',rare:'#3aa0ff',epic:'#b45cff',legendary:'#ff9d2e'}[def.rarity];
   const vcls=v==='gold'?'v-gold-c':v==='rainbow'?'v-rainbow-c':v==='alt'?'v-alt-c':'';
   const iconCls=v==='alt'?'icon altart':'icon';
-  return '<div class="card '+r.cls+' '+vcls+'"><div class="artwrap"><img class="art" src="'+cardArt(def,v)+'"><span class="miniIcon">'+def.icon+'</span></div><div class="nm">'+def.name+'</div>'+
+  return '<div class="card '+r.cls+' '+vcls+'"><div class="artwrap"><img class="art" src="'+cardArt(def,v)+'" onerror="cardArtFail(this,\''+def.id+'\',\''+v+'\')"><span class="miniIcon">'+def.icon+'</span></div><div class="nm">'+def.name+'</div>'+
     '<div class="st" style="color:'+rc+'">'+r.name+'</div><div class="st">'+(extra||'')+'</div>'+
     (v!=='normal'?'<div class="vbadge v-'+v+'">'+V.name+'</div>':'')+'</div>';
 }
